@@ -1,146 +1,112 @@
 <!DOCTYPE html>
-
-<html lang=en>
+<html lang="en">
 <head>
-    <meta charset="UTF-8"/>
-    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Dashboard with Sidebar Menu</title>
-    <link rel="stylesheet" href="styles.css"/>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BridgeScan Dashboard</title>
 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1-beta3/css/all.min.css"/>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 </head>
-<style>
-  * {
-    margin: 0px;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: "Poppins", sans-serif; 
-  }
-.sidebar
-{
-    position: fixed;
-    width: 260px;
-    height: 100%;
-    background: #11101d;
-    padding: 15px;
-}
-.logo{
-    font-size:25px;
-    padding: 0 15px;
 
-}
-.sidebar a {
-    color:#fff;
-    text-decoration: none;
+<body>
 
-} 
-.menu-content {
-    position: relative;
-    height: 100%;
-    width: 100%;
-    margin-top: 40px;
-}
-.menu-items {
-    list-style: none;
-}
-.menu-title {
-    color: #fff;
-    font-size: 14px;
-    padding: 15px 20px
-}
-.item a,
-.submenu-item {
-    padding: 16px;
-    background-color: red;
-    display: inline-block;
-    border-radius: 12px;
-}
-.item a:hover,
-.submenu-item:hover,
-.submenu .menu-title:hover {
-    background: rgba(255, 255, 255, 0.1);
-}
-.sidemenu-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    color: #fff;
-    cursor: pointer;
-}
-.submenu {
-    position: absolute;
-    height: 100%;
-    width: 100%;
-    top: 0;
+<div class="sidebar">
+    <div class="logo">
+        <i class="fa-solid fa-bridge"></i> BridgeScan
+    </div>
 
-    right: calc (100%-25px);
-    background: #11101d;
-}
-.submenu .menu-title:hover {
-    border-radius:12px;
-    cursor: pointer;
-    
-}
-</style>
-  <body>
-    <nav class="sidebar">
-        <a href="#" class="logo">BridgeScan</a>
-
-        <div class= "menu-content">
-            <ul class= "menu-items">
-               <div class= "menu-title">Menu</div>
-
-                <li class="item">
-                    <a href="#">Your first link</a>
-                </li>
-
-                <li class="item">
-                    <div class="submenu-item">
-                <span>First SubMenu</span>
-                <i class= "fa-solid fa-chevron-right"></i>
-              </div>
-
-            <ul class= "menu-items submenu">
-              <div class= "menu-title">Menu</div>
-              <li class="item">
-                <a href="#">First Sublink</a>
-              </li>
-              <li class="item">
-                <a href="#">Your First Sublink</a>
-              </li>
-              <li class="item">
-                <a href="#">Your First Sublink</a>
-              </li>
+    <ul class="menu">
+        <li class="menu-item" id="dashboardMenu">
+            <div class="menu-title">
+                <i class="fa-solid fa-chart-line"></i> Dashboard
+                <i class="fa-solid fa-chevron-down chevron"></i>
+            </div>
+            <ul class="submenu">
+                <li id="bridgeMapBtn"><a href="#">Bridge Map</a></li>
+                <li><a href="#">Overview</a></li>
+                <li><a href="#">Bridge List</a></li>
+                <li><a href="#">Health Monitoring</a></li>
             </ul>
-          </li>
-          <li class="item">
-                    <div class="submenu-item">
-                <span>Second SubMenu</span>
-                <i class= "fa-solid fa-chevron-right"></i>
-              </div>
+        </li>
 
-            <ul class= "menu-items submenu">
-              <div class= "menu-title">Menu</div>
-              <li class="item">
-                <a href="#">Second Sublink</a>
-              </li>
-              <li class="item">
-                 <a href="#">Your Second Sublink</a>
-               </li>
-               <li class="item">
-                 <a href="#">Your Second Sublink</a>
-               </li>
-             </ul>
-           </li>
+        <li class="menu-item">
+            <div class="menu-title">
+                <i class="fa-solid fa-bridge"></i> Bridges
+                <i class="fa-solid fa-chevron-down chevron"></i>
+            </div>
+            <ul class="submenu">
+                <li><a href="#">All Bridges</a></li>
+                <li><a href="#">Damage Reports</a></li>
+            </ul>
+        </li>
 
-          <li class="item">
-           <a href="#">Second Link</a>
-         </li>
-       </ul>
-     </div>
-   </nav>
+        <li class="menu-item">
+            <div class="menu-title">
+                <i class="fa-solid fa-clipboard-check"></i> Inspections
+                <i class="fa-solid fa-chevron-down chevron"></i>
+            </div>
+            <ul class="submenu">
+                <li><a href="#">Inspection Log</a></li>
+                <li><a href="#">Schedule</a></li>
+            </ul>
+        </li>
 
-  <script src="script.js"></script>
-  </body>
+        <li class="menu-item">
+            <div class="menu-title">
+                <i class="fa-solid fa-gear"></i> Settings
+                <i class="fa-solid fa-chevron-down chevron"></i>
+            </div>
+            <ul class="submenu">
+                <li><a href="#">Profile</a></li>
+                <li><a href="#">Preferences</a></li>
+            </ul>
+        </li>
+    </ul>
+</div>
+
+<div class="main">
+    <div class="topbar">
+        <div class="search-box">
+            <i class="fa fa-search"></i>
+            <input type="text" id="searchInput" placeholder="Search steel bridge, location, or damage">
+            <ul id="suggestionList" class="suggestions hidden"></ul>
+        </div>
+
+        <button id="themeToggle">
+            <i class="fa-solid fa-moon"></i>
+        </button>
+    </div>
+
+    <div id="dashboardContent">
+        <div id="overviewMapContainer" class="hidden">
+            <div id="overviewMap"></div>
+        </div>
+
+        <div id="searchMapContainer" class="hidden">
+            <button id="closeSearchMap">×</button>
+            <div id="searchMap"></div>
+        </div>
+
+        <div id="bridgeDetail" class="bridges-list hidden">
+            <h2 id="bridgeName"></h2>
+            <p><b>ID:</b> <span id="bridgeID"></span></p>
+            <p><b>Location:</b> <span id="bridgeLocation"></span></p>
+            <p><b>Type:</b> <span id="bridgeType"></span></p>
+            <p><b>Age:</b> <span id="bridgeAge"></span></p>
+            <p><b>Health:</b> <span id="bridgeHealth"></span>%</p>
+            <p><b>Damage:</b> <span id="bridgeDamage"></span></p>
+            <p><b>Last Scan:</b> <span id="bridgeScan"></span></p>
+
+            <h4>Damage History</h4>
+            <ul id="historyList"></ul>
+        </div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="script.js"></script>
+
+</body>
 </html>
