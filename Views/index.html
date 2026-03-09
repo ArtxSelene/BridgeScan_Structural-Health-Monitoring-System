@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+
+<html lang=en>
+<head>
+    <meta charset="UTF-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Dashboard with Sidebar Menu</title>
+    <link rel="stylesheet" href="styles.css"/>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1-beta3/css/all.min.css"/>
+</head>
+<style>
+  * {
+    margin: 0px;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Poppins", sans-serif; 
+  }
+.sidebar
+{
+    position: fixed;
+    width: 260px;
+    height: 100%;
+    background: #11101d;
+    padding: 15px;
+}
+.logo{
+    font-size:25px;
+    padding: 0 15px;
+
+}
+.sidebar a {
+    color:#fff;
+    text-decoration: none;
+
+} 
+.menu-content {
+    position: relative;
+    height: 100%;
+    width: 100%;
+    margin-top: 40px;
+}
+.menu-items {
+    list-style: none;
+}
+.menu-title {
+    color: #fff;
+    font-size: 14px;
+    padding: 15px 20px
+}
+.item a,
+.submenu-item {
+    padding: 16px;
+    background-color: red;
+    display: inline-block;
+    border-radius: 12px;
+}
+.item a:hover,
+.submenu-item:hover,
+.submenu .menu-title:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+.sidemenu-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #fff;
+    cursor: pointer;
+}
+.submenu {
+    position: absolute;
+    height: 100%;
+    width: 100%;
+    top: 0;
+
+    right: calc (100%-25px);
+    background: #11101d;
+}
+.submenu .menu-title:hover {
+    border-radius:12px;
+    cursor: pointer;
+    
+}
+</style>
+  <body>
+    <nav class="sidebar">
+        <a href="#" class="logo">BridgeScan</a>
+
+        <div class= "menu-content">
+            <ul class= "menu-items">
+               <div class= "menu-title">Menu</div>
+
+                <li class="item">
+                    <a href="#">Your first link</a>
+                </li>
+
+                <li class="item">
+                    <div class="submenu-item">
+                <span>First SubMenu</span>
+                <i class= "fa-solid fa-chevron-right"></i>
+              </div>
+
+            <ul class= "menu-items submenu">
+              <div class= "menu-title">Menu</div>
+              <li class="item">
+                <a href="#">First Sublink</a>
+              </li>
+              <li class="item">
+                <a href="#">Your First Sublink</a>
+              </li>
+              <li class="item">
+                <a href="#">Your First Sublink</a>
+              </li>
+            </ul>
+          </li>
+          <li class="item">
+                    <div class="submenu-item">
+                <span>Second SubMenu</span>
+                <i class= "fa-solid fa-chevron-right"></i>
+              </div>
+
+            <ul class= "menu-items submenu">
+              <div class= "menu-title">Menu</div>
+              <li class="item">
+                <a href="#">Second Sublink</a>
+              </li>
+              <li class="item">
+                 <a href="#">Your Second Sublink</a>
+               </li>
+               <li class="item">
+                 <a href="#">Your Second Sublink</a>
+               </li>
+             </ul>
+           </li>
+
+          <li class="item">
+           <a href="#">Second Link</a>
+         </li>
+       </ul>
+     </div>
+   </nav>
+
+  <script src="script.js"></script>
+  </body>
+</html>
