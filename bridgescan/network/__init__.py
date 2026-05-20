@@ -1,4 +1,2 @@
-
 from .modeling import *
-from ._deeplab import *
-from .utils import *
+from ._deeplab import convert_to_separable_conv

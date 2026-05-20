@@ -1,3 +1,2 @@
-
-from .resnet import *
-from .mobilenetv2 import *
+from . import resnet
+from . import mobilenetv2
