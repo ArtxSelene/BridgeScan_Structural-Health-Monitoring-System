@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BridgeScan</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=1.1" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css" />
+</head>
+
+<body>
+
+  <nav class="sidebar">
+    <div class="sidebar-header">
+      <a href="#" class="logo">BridgeScan</a>
+    </div>
+    <div class="menu-content">
+      <ul class="menu-items">
+        <div class="menu-title">MAIN MENU</div>
+        <li class="item">
+          <div class="submenu-item">
+            <span><i class="fa-solid fa-bridge-water"></i> Bridge Management</span>
+            <i class="fa-solid fa-chevron-right arrow"></i>
+          </div>
+        </li>
+        <li class="item">
+          <div class="submenu-item">
+            <span><i class="fa-solid fa-magnifying-glass-chart"></i> Damage Detection</span>
+            <i class="fa-solid fa-chevron-right arrow"></i>
+          </div>
+        </li>
+        <li class="item">
+          <div class="submenu-item">
+            <span><i class="fa-solid fa-chart-column"></i> Report Analysis</span>
+            <i class="fa-solid fa-chevron-right arrow"></i>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </nav>
+
+  <main class="main">
+    <nav class="navbar">
+      <i class="fa-solid fa-bars" id="sidebar-close"></i>
+    </nav>
+
+    <div class="dashboard">
+      <div class="left-panel">
+        <div class="card camera-card">
+          <div class="card-header">
+            <h2>Live Camera</h2>
+            <span class="status-dot">● LIVE</span>
+          </div>
+          <div class="camera-view-container">
+            <div id="camera-placeholder" class="camera-placeholder">
+              <i class="fa-solid fa-video-slash"></i>
+              <p>Camera is Offline</p>
+            </div>
+            <video id="camera" autoplay playsinline></video>
+          </div>
+        </div>
+
+        <div class="card upload-card">
+          <h3><i class="fa-solid fa-file-import"></i> Steel Bridge</h3>
+          <div class="upload-controls">
+            <label for="imageUpload" id="customUploadBtn" class="btn">
+              <i class="fa-solid fa-cloud-arrow-up"></i> Upload Steel Image
+            </label>
+            <input type="file" id="imageUpload" accept="image/*" hidden />
+          </div>
+          <div class="comparison-grid">
+            <div class="image-box">
+              <p>Original Image</p>
+              <img id="preview" src="#" alt="Original" style="display:none;" />
+            </div>
+            <div class="image-box">
+              <p>Segmentation Overlay</p>
+              <div id="overlayPlaceholder" class="camera-placeholder">
+                <i class="fa-solid fa-microscope"></i>
+                <p>Waiting for analysis...</p>
+              </div>
+              <img id="overlayImage" style="display:none;" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="right-panel">
+        <div class="card info-card">
+          <div class="info-header">
+            <i class="fa-solid fa-magnifying-glass-chart"></i>
+            <h3>DPWH Condition Detection</h3>
+          </div>
+          <p id="detectionResult" class="result-value">Ready to scan...</p>
+        </div>
+        <div class="card info-card">
+          <div class="info-header">
+            <i class="fa-solid fa-bullseye"></i>
+            <h3>Confidence Level</h3>
+          </div>
+          <div class="confidence-container">
+            <div id="confidenceBar" class="confidence-bar"></div>
+          </div>
+          <p id="confidenceText" class="result-value">0%</p>
+        </div>
+        <div class="card info-card">
+          <div class="info-header">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <h3>Condition Rating</h3>
+          </div>
+          <div class="badge-wrapper">
+            <div id="severityBadge" class="severity-badge">-</div>
+          </div>
+        </div>
+        <div class="card info-card">
+          <div class="info-header">
+            <i class="fa-solid fa-microscope"></i>
+            <h3>Dominant State Type & Density</h3>
+          </div>
+          <p id="corrosionType" class="result-value">-</p>
+        </div>
+        <div class="card info-card">
+          <div class="info-header">
+            <i class="fa-solid fa-screwdriver-wrench"></i>
+            <h3>Suggested Repair Method</h3>
+          </div>
+          <p id="action" class="result-value">-</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="{{ url_for('static', filename='script.js') }}?v=1.1"></script>
+</body>
+
+</html>
