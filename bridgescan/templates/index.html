@@ -1,137 +1,544 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BridgeScan</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=1.1" />
+  <title>BridgeScan — AI Bridge Inspector</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css" />
-</head>
+  <style>
+    :root {
+      --bg:        #0a0c10;
+      --surface:   #111318;
+      --surface2:  #181c24;
+      --border:    rgba(255,255,255,0.07);
+      --border2:   rgba(255,255,255,0.13);
+      --accent:    #00e5ff;
+      --good:      #22c55e;
+      --fair:      #eab308;
+      --poor:      #f97316;
+      --bad:       #ef4444;
+      --text:      #e8eaf0;
+      --muted:     #5a6175;
+      --sidebar-w: 240px;
+      --font-mono: 'Space Mono', monospace;
+      --font-body: 'DM Sans', sans-serif;
+    }
 
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ===== SIDEBAR ===== */
+    .sidebar {
+      position: fixed;
+      inset: 0 auto 0 0;
+      width: var(--sidebar-w);
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      transition: transform .4s cubic-bezier(.4,0,.2,1);
+    }
+    .sidebar.hidden { transform: translateX(calc(var(--sidebar-w) * -1)); }
+    .sidebar-logo { padding: 28px 24px 20px; border-bottom: 1px solid var(--border); }
+    .sidebar-logo .name { font-family: var(--font-mono); font-size: 18px; font-weight: 700; color: var(--accent); letter-spacing: 2px; text-transform: uppercase; }
+    .sidebar-logo .tagline { font-size: 11px; color: var(--muted); margin-top: 4px; letter-spacing: .5px; }
+    .nav-section { padding: 20px 12px; flex: 1; }
+    .nav-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: 2px; color: var(--muted); padding: 0 12px; margin-bottom: 8px; margin-top: 16px; }
+    .nav-item { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 10px; font-size: 13.5px; font-weight: 500; color: var(--muted); cursor: pointer; transition: all .2s; border: 1px solid transparent; }
+    .nav-item i { font-size: 14px; width: 16px; text-align: center; }
+    .nav-item:hover { color: var(--text); background: var(--surface2); }
+    .nav-item.active { color: var(--accent); background: rgba(0,229,255,.06); border-color: rgba(0,229,255,.15); }
+    .sidebar-footer { padding: 16px 24px; border-top: 1px solid var(--border); font-size: 11px; color: var(--muted); font-family: var(--font-mono); }
+
+    /* ===== MAIN ===== */
+    .main { margin-left: var(--sidebar-w); transition: margin .4s cubic-bezier(.4,0,.2,1); min-height: 100vh; }
+    .main.expanded { margin-left: 0; }
+
+    /* ===== TOPBAR ===== */
+    .topbar { position: sticky; top: 0; background: rgba(10,12,16,.85); backdrop-filter: blur(16px); border-bottom: 1px solid var(--border); height: 56px; display: flex; align-items: center; padding: 0 28px; gap: 16px; z-index: 100; }
+    .topbar-toggle { background: none; border: 1px solid var(--border2); color: var(--text); width: 36px; height: 36px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; transition: all .2s; }
+    .topbar-toggle:hover { background: var(--surface2); border-color: var(--accent); color: var(--accent); }
+    .topbar-title { font-family: var(--font-mono); font-size: 13px; letter-spacing: 1px; color: var(--muted); }
+    .topbar-title span { color: var(--accent); }
+    .topbar-spacer { flex: 1; }
+    .pulse-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--good); box-shadow: 0 0 0 0 rgba(34,197,94,.6); animation: pulse 2s infinite; }
+    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(34,197,94,.6); } 70% { box-shadow: 0 0 0 8px rgba(34,197,94,0); } 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); } }
+    .status-text { font-family: var(--font-mono); font-size: 11px; color: var(--good); letter-spacing: 1px; }
+
+    /* ===== LAYOUT ===== */
+    .content { padding: 28px; display: grid; grid-template-columns: 1fr 360px; gap: 20px; max-width: 1440px; margin: 0 auto; }
+    .left-col { display: flex; flex-direction: column; gap: 20px; }
+    .right-col { display: flex; flex-direction: column; gap: 16px; }
+
+    /* ===== CARD ===== */
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; transition: border-color .3s; }
+    .card:hover { border-color: var(--border2); }
+    .card-head { padding: 18px 22px 14px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
+    .card-head-left { display: flex; align-items: center; gap: 10px; }
+    .card-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 13px; background: rgba(0,229,255,.1); color: var(--accent); }
+    .card-title { font-size: 13.5px; font-weight: 600; color: var(--text); letter-spacing: .3px; }
+    .card-body { padding: 20px 22px; }
+
+    /* ===== CAMERA ===== */
+    .camera-wrap { position: relative; background: #060810; border-radius: 12px; overflow: hidden; aspect-ratio: 16/9; max-height: 300px; display: flex; align-items: center; justify-content: center; }
+    .camera-offline { display: flex; flex-direction: column; align-items: center; gap: 10px; color: var(--muted); }
+    .camera-offline i { font-size: 28px; }
+    .camera-offline p { font-size: 12px; font-family: var(--font-mono); letter-spacing: 1px; }
+    #camera { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: none; }
+    .live-badge { position: absolute; top: 12px; left: 12px; background: rgba(239,68,68,.15); border: 1px solid rgba(239,68,68,.3); color: var(--bad); font-family: var(--font-mono); font-size: 10px; letter-spacing: 1.5px; padding: 4px 10px; border-radius: 6px; display: flex; align-items: center; gap: 6px; }
+    .live-badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--bad); animation: pulse-red 1.4s infinite; }
+    @keyframes pulse-red { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
+
+    /* ===== UPLOAD ===== */
+    .upload-bar { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+    .upload-btn { display: flex; align-items: center; gap: 8px; padding: 9px 20px; background: rgba(0,229,255,.08); border: 1px solid rgba(0,229,255,.25); color: var(--accent); font-size: 13px; font-weight: 600; font-family: var(--font-body); border-radius: 10px; cursor: pointer; transition: all .2s; letter-spacing: .3px; }
+    .upload-btn:hover { background: rgba(0,229,255,.16); border-color: var(--accent); transform: translateY(-1px); }
+    .upload-hint { font-size: 12px; color: var(--muted); }
+    .comparison-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .img-box { background: #060810; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    .img-box-label { padding: 10px 14px; font-size: 11px; font-family: var(--font-mono); letter-spacing: 1px; color: var(--muted); border-bottom: 1px solid var(--border); }
+    .img-box-inner { position: relative; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; }
+    .img-placeholder { display: flex; flex-direction: column; align-items: center; gap: 8px; color: var(--muted); font-size: 11px; font-family: var(--font-mono); }
+    .img-placeholder i { font-size: 22px; }
+    .img-box-inner img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: none; }
+
+    /* ===== STAT CARDS ===== */
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; transition: border-color .3s, transform .2s; }
+    .stat-card:hover { border-color: var(--border2); transform: translateY(-1px); }
+    .stat-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+    .stat-icon { width: 30px; height: 30px; border-radius: 7px; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--accent); }
+    .stat-label { font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; font-family: var(--font-mono); }
+    .stat-value { font-size: 15px; font-weight: 500; color: var(--text); line-height: 1.4; }
+    #detectionResult { font-size: 14px; font-weight: 600; }
+
+    /* Confidence */
+    .conf-track { background: var(--surface2); border-radius: 99px; height: 8px; overflow: hidden; margin: 10px 0 6px; }
+    .conf-fill { height: 100%; width: 0%; background: var(--accent); border-radius: 99px; transition: width .6s cubic-bezier(.4,0,.2,1), background-color .3s; }
+    #confidenceText { font-family: var(--font-mono); font-size: 22px; font-weight: 700; color: var(--text); }
+
+    /* Badge */
+    .badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 8px; font-family: var(--font-mono); font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; background: var(--surface2); color: var(--muted); border: 1px solid var(--border); transition: all .3s; }
+
+    #action { font-size: 13px; line-height: 1.7; color: var(--muted); }
+
+    /* Scanning animation */
+    .scanning .conf-fill { animation: scan-pulse 1s ease-in-out infinite alternate; }
+    @keyframes scan-pulse { from { opacity: .4; } to { opacity: 1; } }
+
+    /* ===== DENSITY REPORT ===== */
+    .density-row { display: flex; align-items: center; gap: 10px; margin-bottom: 11px; }
+    .density-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+    .density-name { font-size: 11px; font-family: var(--font-mono); color: var(--muted); width: 36px; }
+    .density-track { flex: 1; height: 7px; background: var(--surface2); border-radius: 99px; overflow: hidden; }
+    .density-fill { height: 100%; width: 0%; border-radius: 99px; transition: width .7s cubic-bezier(.4,0,.2,1); }
+    .density-pct { font-size: 11px; font-family: var(--font-mono); color: var(--text); width: 50px; text-align: right; }
+    .density-px  { font-size: 10px; font-family: var(--font-mono); color: var(--muted); width: 68px; text-align: right; }
+    .density-total { margin-top: 13px; padding-top: 13px; border-top: 1px solid var(--border); font-size: 11px; color: var(--muted); font-family: var(--font-mono); display: flex; justify-content: space-between; align-items: center; }
+    .density-total strong { font-size: 14px; color: var(--bad); }
+
+    /* ===== LEGEND ===== */
+    .legend { display: flex; gap: 16px; flex-wrap: wrap; padding: 12px 22px; background: rgba(0,0,0,.25); border-top: 1px solid var(--border); }
+    .legend-item { display: flex; align-items: center; gap: 7px; font-size: 11px; color: var(--muted); font-family: var(--font-mono); }
+    .legend-dot { width: 10px; height: 10px; border-radius: 3px; }
+
+    /* ===== SCROLLBAR ===== */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 99px; }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 1100px) {
+      .content { grid-template-columns: 1fr; }
+      .right-col { display: grid; grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 700px) {
+      .content { padding: 16px; gap: 14px; }
+      .right-col { grid-template-columns: 1fr; }
+      .comparison-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
 <body>
 
-  <nav class="sidebar">
-    <div class="sidebar-header">
-      <a href="#" class="logo">BridgeScan</a>
+  <!-- SIDEBAR -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="name">BridgeScan</div>
+      <div class="tagline">AI-Powered Bridge Inspector</div>
     </div>
-    <div class="menu-content">
-      <ul class="menu-items">
-        <div class="menu-title">MAIN MENU</div>
-        <li class="item">
-          <div class="submenu-item">
-            <span><i class="fa-solid fa-bridge-water"></i> Bridge Management</span>
-            <i class="fa-solid fa-chevron-right arrow"></i>
-          </div>
-        </li>
-        <li class="item">
-          <div class="submenu-item">
-            <span><i class="fa-solid fa-magnifying-glass-chart"></i> Damage Detection</span>
-            <i class="fa-solid fa-chevron-right arrow"></i>
-          </div>
-        </li>
-        <li class="item">
-          <div class="submenu-item">
-            <span><i class="fa-solid fa-chart-column"></i> Report Analysis</span>
-            <i class="fa-solid fa-chevron-right arrow"></i>
-          </div>
-        </li>
-      </ul>
+    <div class="nav-section">
+      <div class="nav-label">Main Menu</div>
+      <div class="nav-item active"><i class="fa-solid fa-bridge-water"></i> Bridge Management</div>
+      <div class="nav-item"><i class="fa-solid fa-magnifying-glass-chart"></i> Damage Detection</div>
+      <div class="nav-item"><i class="fa-solid fa-chart-column"></i> Report Analysis</div>
+      <div class="nav-label">System</div>
+      <div class="nav-item"><i class="fa-solid fa-gear"></i> Settings</div>
+      <div class="nav-item"><i class="fa-solid fa-circle-question"></i> Help</div>
     </div>
+    <div class="sidebar-footer">v2.0.0 — DeepLabV3+</div>
   </nav>
 
-  <main class="main">
-    <nav class="navbar">
-      <i class="fa-solid fa-bars" id="sidebar-close"></i>
-    </nav>
+  <!-- MAIN -->
+  <div class="main" id="main">
 
-    <div class="dashboard">
-      <div class="left-panel">
-        <div class="card camera-card">
-          <div class="card-header">
-            <h2>Live Camera</h2>
-            <span class="status-dot">● LIVE</span>
-          </div>
-          <div class="camera-view-container">
-            <div id="camera-placeholder" class="camera-placeholder">
-              <i class="fa-solid fa-video-slash"></i>
-              <p>Camera is Offline</p>
-            </div>
-            <video id="camera" autoplay playsinline></video>
-          </div>
-        </div>
+    <div class="topbar">
+      <button class="topbar-toggle" id="sidebarToggle"><i class="fa-solid fa-bars"></i></button>
+      <span class="topbar-title">BridgeScan / <span>Inspector</span></span>
+      <div class="topbar-spacer"></div>
+      <div class="pulse-dot"></div>
+      <span class="status-text">SYSTEM READY</span>
+    </div>
 
-        <div class="card upload-card">
-          <h3><i class="fa-solid fa-file-import"></i> Steel Bridge</h3>
-          <div class="upload-controls">
-            <label for="imageUpload" id="customUploadBtn" class="btn">
-              <i class="fa-solid fa-cloud-arrow-up"></i> Upload Steel Image
-            </label>
-            <input type="file" id="imageUpload" accept="image/*" hidden />
-          </div>
-          <div class="comparison-grid">
-            <div class="image-box">
-              <p>Original Image</p>
-              <img id="preview" src="#" alt="Original" style="display:none;" />
+    <div class="content">
+
+      <!-- LEFT COL -->
+      <div class="left-col">
+
+        <!-- Camera -->
+        <div class="card">
+          <div class="card-head">
+            <div class="card-head-left">
+              <div class="card-icon"><i class="fa-solid fa-video"></i></div>
+              <span class="card-title">Live Camera Feed</span>
             </div>
-            <div class="image-box">
-              <p>Segmentation Overlay</p>
-              <div id="overlayPlaceholder" class="camera-placeholder">
-                <i class="fa-solid fa-microscope"></i>
-                <p>Waiting for analysis...</p>
+            <div style="display:flex;gap:8px">
+              <button class="upload-btn" style="padding:6px 14px;font-size:12px;" onclick="toggleCamera(true)">
+                <i class="fa-solid fa-circle-play"></i> Start
+              </button>
+              <button class="upload-btn" style="padding:6px 14px;font-size:12px;color:var(--bad);border-color:rgba(239,68,68,.3);background:rgba(239,68,68,.07);" onclick="toggleCamera(false)">
+                <i class="fa-solid fa-circle-stop"></i> Stop
+              </button>
+            </div>
+          </div>
+          <div class="card-body" style="padding:16px 20px;">
+            <div class="camera-wrap">
+              <div class="live-badge">LIVE</div>
+              <div class="camera-offline" id="cameraPlaceholder">
+                <i class="fa-solid fa-video-slash"></i>
+                <p>CAMERA OFFLINE</p>
               </div>
-              <img id="overlayImage" style="display:none;" />
+              <video id="camera" autoplay playsinline></video>
             </div>
           </div>
         </div>
+
+        <!-- Upload & Analysis -->
+        <div class="card">
+          <div class="card-head">
+            <div class="card-head-left">
+              <div class="card-icon"><i class="fa-solid fa-microscope"></i></div>
+              <span class="card-title">Steel Bridge — Image Analysis</span>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="upload-bar">
+              <label for="imageUpload" id="customUploadBtn" class="upload-btn">
+                <i class="fa-solid fa-cloud-arrow-up"></i> Upload Image
+              </label>
+              <input type="file" id="imageUpload" accept="image/*" hidden />
+              <span class="upload-hint">Supports JPG, PNG — 512×512 recommended</span>
+            </div>
+            <div class="comparison-grid">
+              <div class="img-box">
+                <div class="img-box-label">ORIGINAL IMAGE</div>
+                <div class="img-box-inner">
+                  <div class="img-placeholder" id="previewPlaceholder">
+                    <i class="fa-solid fa-image"></i>
+                    <span>No image loaded</span>
+                  </div>
+                  <img id="preview" src="#" alt="Original" />
+                </div>
+              </div>
+              <div class="img-box">
+                <div class="img-box-label">SEGMENTATION OVERLAY</div>
+                <div class="img-box-inner">
+                  <div class="img-placeholder" id="overlayPlaceholder">
+                    <i class="fa-solid fa-layer-group"></i>
+                    <span>Awaiting scan...</span>
+                  </div>
+                  <img id="overlayImage" alt="Overlay" />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="legend">
+            <div class="legend-item"><div class="legend-dot" style="background:#22c55e"></div> Good</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#eab308"></div> Fair</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#f97316"></div> Poor</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#ef4444"></div> Bad</div>
+          </div>
+        </div>
+
       </div>
 
-      <div class="right-panel">
-        <div class="card info-card">
-          <div class="info-header">
-            <i class="fa-solid fa-magnifying-glass-chart"></i>
-            <h3>DPWH Condition Detection</h3>
+      <!-- RIGHT COL -->
+      <div class="right-col">
+
+        <!-- Detection -->
+        <div class="stat-card">
+          <div class="stat-head">
+            <div class="stat-icon"><i class="fa-solid fa-magnifying-glass-chart"></i></div>
+            <span class="stat-label">Condition Detection</span>
           </div>
-          <p id="detectionResult" class="result-value">Ready to scan...</p>
+          <div class="stat-value" id="detectionResult" style="color:var(--muted)">Ready to scan...</div>
         </div>
-        <div class="card info-card">
-          <div class="info-header">
-            <i class="fa-solid fa-bullseye"></i>
-            <h3>Confidence Level</h3>
+
+        <!-- Confidence -->
+        <div class="stat-card" id="confCard">
+          <div class="stat-head">
+            <div class="stat-icon"><i class="fa-solid fa-bullseye"></i></div>
+            <span class="stat-label">Confidence</span>
           </div>
-          <div class="confidence-container">
-            <div id="confidenceBar" class="confidence-bar"></div>
-          </div>
-          <p id="confidenceText" class="result-value">0%</p>
-        </div>
-        <div class="card info-card">
-          <div class="info-header">
-            <i class="fa-solid fa-triangle-exclamation"></i>
-            <h3>Condition Rating</h3>
-          </div>
-          <div class="badge-wrapper">
-            <div id="severityBadge" class="severity-badge">-</div>
+          <div id="confidenceText">0%</div>
+          <div class="conf-track">
+            <div class="conf-fill" id="confidenceBar"></div>
           </div>
         </div>
-        <div class="card info-card">
-          <div class="info-header">
-            <i class="fa-solid fa-microscope"></i>
-            <h3>Dominant State Type & Density</h3>
+
+        <!-- Severity -->
+        <div class="stat-card">
+          <div class="stat-head">
+            <div class="stat-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+            <span class="stat-label">Condition Rating</span>
           </div>
-          <p id="corrosionType" class="result-value">-</p>
-        </div>
-        <div class="card info-card">
-          <div class="info-header">
-            <i class="fa-solid fa-screwdriver-wrench"></i>
-            <h3>Suggested Repair Method</h3>
+          <div class="badge" id="severityBadge">
+            <i class="fa-solid fa-circle-dot"></i> PENDING
           </div>
-          <p id="action" class="result-value">-</p>
         </div>
+
+        <!-- Defect Type -->
+        <div class="stat-card">
+          <div class="stat-head">
+            <div class="stat-icon"><i class="fa-solid fa-microscope"></i></div>
+            <span class="stat-label">Dominant State & Density</span>
+          </div>
+          <div class="stat-value" id="corrosionType" style="color:var(--muted)">—</div>
+        </div>
+
+        <!-- ===== DENSITY REPORT CARD ===== -->
+        <div class="stat-card">
+          <div class="stat-head">
+            <div class="stat-icon"><i class="fa-solid fa-chart-bar"></i></div>
+            <span class="stat-label">Corrosion Density Report</span>
+          </div>
+
+          <div class="density-row">
+            <span class="density-dot" style="background:#eab308"></span>
+            <span class="density-name">Fair</span>
+            <div class="density-track"><div class="density-fill" id="fairFill" style="background:#eab308"></div></div>
+            <span class="density-pct" id="fairPct">—</span>
+            <span class="density-px"  id="fairPx">—</span>
+          </div>
+
+          <div class="density-row">
+            <span class="density-dot" style="background:#f97316"></span>
+            <span class="density-name">Poor</span>
+            <div class="density-track"><div class="density-fill" id="poorFill" style="background:#f97316"></div></div>
+            <span class="density-pct" id="poorPct">—</span>
+            <span class="density-px"  id="poorPx">—</span>
+          </div>
+
+          <div class="density-row">
+            <span class="density-dot" style="background:#ef4444"></span>
+            <span class="density-name">Bad</span>
+            <div class="density-track"><div class="density-fill" id="badFill" style="background:#ef4444"></div></div>
+            <span class="density-pct" id="badPct">—</span>
+            <span class="density-px"  id="badPx">—</span>
+          </div>
+
+          <div class="density-total">
+            <span>Overall Damage Density</span>
+            <strong id="totalDensity">—</strong>
+          </div>
+        </div>
+
+        <!-- Suggested Action -->
+        <div class="stat-card">
+          <div class="stat-head">
+            <div class="stat-icon"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+            <span class="stat-label">Suggested Actions</span>
+          </div>
+          <div id="action">—</div>
+        </div>
+
       </div>
     </div>
-  </main>
+  </div>
 
-  <script src="{{ url_for('static', filename='script.js') }}?v=1.1"></script>
+  <script>
+    /* Sidebar */
+    const sidebar = document.getElementById('sidebar');
+    const mainEl  = document.getElementById('main');
+    document.getElementById('sidebarToggle').addEventListener('click', () => {
+      sidebar.classList.toggle('hidden');
+      mainEl.classList.toggle('expanded');
+    });
+
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.addEventListener('click', () => {
+        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+      });
+    });
+
+    /* Upload trigger */
+    const customUploadBtn = document.getElementById('customUploadBtn');
+    const imageUpload     = document.getElementById('imageUpload');
+    customUploadBtn.addEventListener('click', e => { e.preventDefault(); imageUpload.click(); });
+
+    /* DOM refs */
+    const preview         = document.getElementById('preview');
+    const previewPH       = document.getElementById('previewPlaceholder');
+    const overlayImage    = document.getElementById('overlayImage');
+    const overlayPH       = document.getElementById('overlayPlaceholder');
+    const detectionResult = document.getElementById('detectionResult');
+    const confidenceBar   = document.getElementById('confidenceBar');
+    const confidenceText  = document.getElementById('confidenceText');
+    const severityBadge   = document.getElementById('severityBadge');
+    const corrosionType   = document.getElementById('corrosionType');
+    const actionText      = document.getElementById('action');
+    const confCard        = document.getElementById('confCard');
+
+    const API_URL = '/predict';
+
+    imageUpload.addEventListener('change', async function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      /* Show preview */
+      preview.src = URL.createObjectURL(file);
+      preview.style.display = 'block';
+      previewPH.style.display = 'none';
+      overlayImage.style.display = 'none';
+      overlayPH.style.display = 'flex';
+
+      /* Loading state */
+      detectionResult.innerText   = '⏳ Scanning...';
+      detectionResult.style.color = 'var(--muted)';
+      confidenceText.innerText    = '—';
+      confidenceBar.style.width   = '30%';
+      confidenceBar.style.background = 'var(--muted)';
+      confCard.classList.add('scanning');
+      severityBadge.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> SCANNING';
+      severityBadge.style.cssText = '';
+      corrosionType.innerText = 'Analyzing pixel segments...';
+      actionText.innerText    = 'Computing repair strategy...';
+
+      /* Reset density bars */
+      ['fair','poor','bad'].forEach(k => {
+        document.getElementById(k+'Fill').style.width = '0%';
+        document.getElementById(k+'Pct').innerText = '—';
+        document.getElementById(k+'Px').innerText  = '—';
+      });
+      document.getElementById('totalDensity').innerText = '—';
+
+      const formData = new FormData();
+      formData.append('image', file);
+
+      try {
+        const res = await fetch(API_URL, { method: 'POST', body: formData });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+
+        confCard.classList.remove('scanning');
+
+        /* Detection */
+        const isAnomaly = data.prediction === 'ANOMALY DETECTED';
+        detectionResult.innerText   = data.prediction || 'Complete';
+        detectionResult.style.color = isAnomaly ? 'var(--bad)' : 'var(--good)';
+
+        /* Confidence */
+        const score = data.confidence || 0;
+        confidenceText.innerText       = `${score}%`;
+        confidenceBar.style.width      = `${score}%`;
+        confidenceBar.style.background =
+          score > 85 ? 'var(--good)' : score > 65 ? 'var(--fair)' : 'var(--bad)';
+
+        /* Severity badge */
+        const state  = (data.severity || 'good').toUpperCase();
+        const colors = { HEALTHY:'var(--good)', FAIR:'var(--fair)', POOR:'var(--poor)', SEVERE:'var(--bad)' };
+        const icons  = { HEALTHY:'fa-circle-check', FAIR:'fa-circle-dot', POOR:'fa-triangle-exclamation', SEVERE:'fa-circle-exclamation' };
+        const col = colors[state] || 'var(--muted)';
+        severityBadge.innerHTML        = `<i class="fa-solid ${icons[state] || 'fa-circle-dot'}"></i> ${state}`;
+        severityBadge.style.background  = col + '22';
+        severityBadge.style.color       = col;
+        severityBadge.style.borderColor = col + '55';
+
+        /* Defect + density */
+        corrosionType.innerText   = `${data.defect_type || 'Unknown'} — Total: ${data.density || 0}%`;
+        corrosionType.style.color = 'var(--text)';
+
+        /* ===== DENSITY REPORT ===== */
+        const d = data.densities;
+        if (d) {
+          document.getElementById('fairFill').style.width = `${Math.min(d.fair, 100)}%`;
+          document.getElementById('poorFill').style.width = `${Math.min(d.poor, 100)}%`;
+          document.getElementById('badFill').style.width  = `${Math.min(d.bad,  100)}%`;
+
+          document.getElementById('fairPct').innerText = `${d.fair}%`;
+          document.getElementById('poorPct').innerText = `${d.poor}%`;
+          document.getElementById('badPct').innerText  = `${d.bad}%`;
+
+          document.getElementById('fairPx').innerText = `(${d.fair_px ?? '—'} px)`;
+          document.getElementById('poorPx').innerText = `(${d.poor_px ?? '—'} px)`;
+          document.getElementById('badPx').innerText  = `(${d.bad_px  ?? '—'} px)`;
+
+          document.getElementById('totalDensity').innerText = `${d.total}%`;
+        }
+
+        /* Action */
+        actionText.innerText   = data.suggestion || '—';
+        actionText.style.color = 'var(--text)';
+
+        /* Overlay */
+        if (data.overlay) {
+          overlayImage.src = data.overlay;
+          overlayImage.style.display = 'block';
+          overlayPH.style.display    = 'none';
+        }
+
+      } catch (err) {
+        confCard.classList.remove('scanning');
+        console.error(err);
+        detectionResult.innerText   = '❌ Engine Error';
+        detectionResult.style.color = 'var(--bad)';
+        actionText.innerText        = 'Could not reach Flask AI server.';
+      }
+    });
+
+    /* Camera */
+    let cameraStream = null;
+    window.toggleCamera = async function(start) {
+      const video = document.getElementById('camera');
+      const ph    = document.getElementById('cameraPlaceholder');
+      if (start) {
+        try {
+          cameraStream = await navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720 } });
+          video.srcObject = cameraStream;
+          video.style.display = 'block';
+          ph.style.display    = 'none';
+        } catch (err) {
+          alert('Cannot access camera. Check your browser permissions.');
+        }
+      } else {
+        if (cameraStream) { cameraStream.getTracks().forEach(t => t.stop()); cameraStream = null; }
+        video.srcObject     = null;
+        video.style.display = 'none';
+        ph.style.display    = 'flex';
+      }
+    };
+
+    console.log('%cBridgeScan AI Engine v2.0 initialized.', 'color:#00e5ff;font-family:monospace;font-weight:bold');
+  </script>
 </body>
-
 </html>
