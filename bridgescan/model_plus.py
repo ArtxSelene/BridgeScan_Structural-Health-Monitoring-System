@@ -2,7 +2,7 @@
 from network._deeplab import DeepLabHeadV3Plus # good
 from network.modeling import deeplabv3plus_resnet50 # good
 from network.modeling import deeplabv3plus_resnet101 # good
-import torch
+import torch # type: ignore
 # from torchvision import models
 # n_classes is the number of probabilities you want to get per pixel
 #   - For 1 class and background, use n_classes=1
