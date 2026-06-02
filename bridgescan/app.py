@@ -60,9 +60,9 @@ def run_autoencoder(pil_image):
       - predict with autoencoder
       - MSE between input and reconstruction
     """
-    gray = pil_image.convert('L').resize((64, 64))
+    gray = pil_image.convert('L').resize((512, 512))
     img_arr = np.array(gray, dtype=np.float32) / 255.0
-    img_arr = img_arr.reshape(1, 64, 64, 1)
+    img_arr = img_arr.reshape(1, 512, 512, 1)
 
     reconstructed = autoencoder.predict(img_arr, verbose=0)
     mse = float(np.mean(np.square(img_arr - reconstructed)))
@@ -170,14 +170,25 @@ def predict():
 
 @app.route("/predict/autoencoder", methods=["POST"])
 def predict_autoencoder():
-    """Autoencoder — called on image upload."""
+
     if autoencoder is None:
         return jsonify({"error": "Autoencoder not loaded"}), 500
+
     if "image" not in request.files:
         return jsonify({"error": "No image"}), 400
+
     pil_image = Image.open(request.files["image"]).convert("RGB")
-    result, mse = run_autoencoder(pil_image)
-    return jsonify({"damage_detected": result, "reconstruction_error": round(mse, 6)})
+
+    ae_result, ae_mse = run_autoencoder(pil_image)
+    cnn_result = run_cnn(pil_image)
+
+    if cnn_result["severity"] != "Healthy":
+        ae_result = "ANOMALY DETECTED"
+
+    return jsonify({
+        "damage_detected": ae_result,
+        "reconstruction_error": round(ae_mse, 6)
+    })
 
 
 @app.route("/predict/camera", methods=["POST"])
@@ -205,6 +216,9 @@ def predict_camera():
     # Run both models
     ae_result, ae_mse = run_autoencoder(pil_image)
     cnn_result        = run_cnn(pil_image)
+
+    if cnn_result["density"] > 0:
+        ae_result = "Anomaly Detected"
 
     return jsonify({
         # Autoencoder
